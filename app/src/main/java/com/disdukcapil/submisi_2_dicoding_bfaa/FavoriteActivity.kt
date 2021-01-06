@@ -1,13 +1,17 @@
 package com.disdukcapil.submisi_2_dicoding_bfaa
 
+import android.database.ContentObserver
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Handler
+import android.os.HandlerThread
 import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.disdukcapil.submisi_2_dicoding_bfaa.adapter.FavoriteAdapter
 import com.disdukcapil.submisi_2_dicoding_bfaa.databinding.ActivityFavoriteBinding
+import com.disdukcapil.submisi_2_dicoding_bfaa.db.DatabaseContract.UserColumns.Companion.CONTENT_URI
 import com.disdukcapil.submisi_2_dicoding_bfaa.db.UserHelper
 import com.disdukcapil.submisi_2_dicoding_bfaa.entity.User
 import com.disdukcapil.submisi_2_dicoding_bfaa.helper.MappingHelper
@@ -42,25 +46,37 @@ class FavoriteActivity : AppCompatActivity() {
 
         Log.d("sqlite", adapter.toString())
 
+        val handlerThread = HandlerThread("DataObserver")
+        handlerThread.start()
+        val handler = Handler(handlerThread.looper)
+
+        val myObserver = object : ContentObserver(handler) {
+            override fun onChange(self: Boolean) {
+                loadUserAsnyc()
+            }
+        }
+
+        contentResolver.registerContentObserver(CONTENT_URI, true, myObserver)
+
+
         if (savedInstanceState == null) {
             loadUserAsnyc()
         } else {
-            val list = savedInstanceState.getParcelableArrayList<User>(EXTRA_STATE)
-            if (list != null) {
-                adapter.listFavorite = list
-            }
+            savedInstanceState.getParcelableArrayList<User>(EXTRA_STATE)?.also { adapter.listFavorite = it }
         }
+
     }
 
     private fun loadUserAsnyc() {
         GlobalScope.launch(Dispatchers.Main) {
             binding.progressBar.visibility = View.VISIBLE
             val deferredNotes = async(Dispatchers.IO) {
-                val cursor = userHelper.queryAll()
+                // CONTENT_URI = content://com.dicoding.picodiploma.mynotesapp/note
+                val cursor = contentResolver.query(CONTENT_URI, null, null, null, null)
                 MappingHelper.mapCursorToArrayList(cursor)
             }
-            binding.progressBar.visibility = View.INVISIBLE
             val notes = deferredNotes.await()
+            binding.progressBar.visibility = View.INVISIBLE
             if (notes.size > 0) {
                 adapter.listFavorite = notes
             } else {
@@ -73,6 +89,7 @@ class FavoriteActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         userHelper.close()
+
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
