@@ -18,4 +18,17 @@ object MappingHelper {
         }
         return notesList
     }
+
+    fun mapCursorToObject(notesCursor: Cursor?): User {
+        var user = User()
+        notesCursor?.apply {
+            moveToFirst()
+            val id = getInt(getColumnIndexOrThrow(DatabaseContract.UserColumns._ID))
+            val username = getString(getColumnIndexOrThrow(DatabaseContract.UserColumns.USERNAME))
+            val avatar_url = getString(getColumnIndexOrThrow(DatabaseContract.UserColumns.AVATAR_URL))
+            user = User(id, username, avatar_url)
+        }
+        return user
+    }
+
 }

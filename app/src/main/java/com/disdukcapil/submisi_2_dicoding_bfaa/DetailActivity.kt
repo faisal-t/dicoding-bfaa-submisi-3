@@ -1,6 +1,7 @@
 package com.disdukcapil.submisi_2_dicoding_bfaa
 
 import android.content.ContentValues
+import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
@@ -13,6 +14,7 @@ import androidx.viewpager.widget.ViewPager
 import com.bumptech.glide.Glide
 import com.disdukcapil.submisi_2_dicoding_bfaa.databinding.ActivityDetailBinding
 import com.disdukcapil.submisi_2_dicoding_bfaa.db.DatabaseContract
+import com.disdukcapil.submisi_2_dicoding_bfaa.db.DatabaseContract.UserColumns.Companion.CONTENT_URI
 import com.disdukcapil.submisi_2_dicoding_bfaa.db.UserHelper
 import com.disdukcapil.submisi_2_dicoding_bfaa.entity.User
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -41,6 +43,7 @@ class DetailActivity : AppCompatActivity() {
     private var isFavorite = false
     private lateinit var userhelper: UserHelper
     private var user : User ?= null
+    private lateinit var uriWithId: Uri
 
 
 
@@ -90,6 +93,8 @@ class DetailActivity : AppCompatActivity() {
             isFavorite = true
         }
 
+        uriWithId = Uri.parse(CONTENT_URI.toString() + "/" + dataModel.username.toString())
+
         statusFavorite(isFavorite)
         fabFavorite.setOnClickListener {
             isFavorite = !isFavorite
@@ -102,19 +107,19 @@ class DetailActivity : AppCompatActivity() {
 
 
 
-                userhelper.deleteById(dataUsername.toString())
+                contentResolver.delete(uriWithId, null, null)
 
                 val values = ContentValues()
                 values.put(DatabaseContract.UserColumns.USERNAME,dataUsername)
                 values.put(DatabaseContract.UserColumns.AVATAR_URL,dataAvatar)
 
                 //akhir kode insert
-                userhelper.insert(values)
+                contentResolver.insert(CONTENT_URI, values)
                 Log.d("insert",userhelper.toString())
                 Toast.makeText(this,"berhasil Tambah favorite",Toast.LENGTH_SHORT).show()
             }
             else{
-                userhelper.deleteById(dataUsername.toString())
+                contentResolver.delete(uriWithId, null, null)
 
                 Log.d("username",userhelper.toString())
                 Toast.makeText(this,"berhasil Hapus favorite",Toast.LENGTH_SHORT).show()
